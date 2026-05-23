@@ -1,0 +1,557 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SQL Server Question Bank — AdventureWorksDW</title>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&family=Syne:wght@400;600;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0f0f13;
+    --surface: #17171e;
+    --surface2: #1e1e28;
+    --border: rgba(255,255,255,0.07);
+    --border2: rgba(255,255,255,0.13);
+    --text: #e8e8f0;
+    --muted: #7a7a90;
+    --accent: #6c63ff;
+    --accent-dim: rgba(108,99,255,0.15);
+    --green: #3dd68c;
+    --green-dim: rgba(61,214,140,0.12);
+    --amber: #f59e0b;
+    --amber-dim: rgba(245,158,11,0.12);
+    --red: #f87171;
+    --red-dim: rgba(248,113,113,0.12);
+    --blue: #60a5fa;
+    --blue-dim: rgba(96,165,250,0.12);
+    --code-bg: #0a0a10;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    font-family: 'Syne', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    line-height: 1.6;
+  }
+
+  /* ─── HEADER ─── */
+  header {
+    padding: 2.5rem 2rem 2rem;
+    border-bottom: 1px solid var(--border);
+    background: linear-gradient(180deg, #12121a 0%, var(--bg) 100%);
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    backdrop-filter: blur(12px);
+  }
+
+  .header-inner {
+    max-width: 900px;
+    margin: 0 auto;
+  }
+
+  .header-top {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 1rem;
+    margin-bottom: 1.25rem;
+  }
+
+  .title-block h1 {
+    font-size: 1.7rem;
+    font-weight: 800;
+    letter-spacing: -0.5px;
+    background: linear-gradient(135deg, #fff 30%, var(--accent) 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    line-height: 1.2;
+  }
+
+  .title-block p {
+    font-size: 0.82rem;
+    color: var(--muted);
+    margin-top: 4px;
+    font-family: 'JetBrains Mono', monospace;
+  }
+
+  .stats-row {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+
+  .stat-pill {
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    cursor: pointer;
+    border: 1px solid transparent;
+    transition: all .2s;
+    font-family: 'JetBrains Mono', monospace;
+  }
+  .stat-pill:hover { transform: translateY(-1px); }
+  .stat-pill.all    { background: var(--accent-dim); color: var(--accent); border-color: rgba(108,99,255,0.3); }
+  .stat-pill.beg    { background: var(--green-dim);  color: var(--green);  border-color: rgba(61,214,140,0.3); }
+  .stat-pill.int    { background: var(--amber-dim);  color: var(--amber);  border-color: rgba(245,158,11,0.3); }
+  .stat-pill.adv    { background: var(--red-dim);    color: var(--red);    border-color: rgba(248,113,113,0.3); }
+  .stat-pill.inactive { opacity: 0.35; }
+  .stat-pill.active  { opacity: 1; box-shadow: 0 0 0 2px currentColor; }
+
+  /* ─── FILTERS ─── */
+  .filters {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    max-width: 900px;
+    margin: 1rem auto 0;
+  }
+
+  .search-wrap {
+    position: relative;
+    flex: 1 1 220px;
+  }
+  .search-wrap .icon {
+    position: absolute;
+    left: 11px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--muted);
+    font-size: 14px;
+    pointer-events: none;
+  }
+
+  input[type="text"], select {
+    background: var(--surface2);
+    border: 1px solid var(--border2);
+    color: var(--text);
+    border-radius: 8px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.78rem;
+    padding: 8px 12px;
+    outline: none;
+    transition: border-color .2s;
+  }
+  input[type="text"] { padding-left: 32px; width: 100%; }
+  input[type="text"]:focus, select:focus { border-color: var(--accent); }
+  select { cursor: pointer; padding-right: 24px; }
+  select option { background: var(--surface2); }
+
+  .count-badge {
+    display: flex;
+    align-items: center;
+    padding: 8px 14px;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    font-size: 0.78rem;
+    color: var(--muted);
+    font-family: 'JetBrains Mono', monospace;
+    white-space: nowrap;
+  }
+
+  /* ─── MAIN ─── */
+  main {
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 1.5rem 2rem 4rem;
+  }
+
+  .empty-state {
+    text-align: center;
+    padding: 4rem 2rem;
+    color: var(--muted);
+    font-size: 0.9rem;
+  }
+  .empty-state span { font-size: 2rem; display: block; margin-bottom: 1rem; }
+
+  /* ─── QUESTION CARD ─── */
+  .q-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    margin-bottom: 8px;
+    overflow: hidden;
+    transition: border-color .2s, box-shadow .2s;
+  }
+  .q-card:hover { border-color: var(--border2); }
+  .q-card.open  { border-color: rgba(108,99,255,0.4); box-shadow: 0 0 0 1px rgba(108,99,255,0.1); }
+
+  .q-header {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 14px 16px;
+    cursor: pointer;
+    user-select: none;
+  }
+
+  .q-num {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.7rem;
+    color: var(--muted);
+    min-width: 28px;
+    padding-top: 3px;
+  }
+
+  .q-meta {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .badge-row {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+    margin-bottom: 7px;
+  }
+
+  .badge {
+    padding: 2px 9px;
+    border-radius: 12px;
+    font-size: 0.68rem;
+    font-weight: 600;
+    letter-spacing: 0.2px;
+    font-family: 'JetBrains Mono', monospace;
+  }
+  .badge.beg   { background: var(--green-dim); color: var(--green); }
+  .badge.int   { background: var(--amber-dim); color: var(--amber); }
+  .badge.adv   { background: var(--red-dim);   color: var(--red);   }
+  .badge.topic { background: var(--surface2);  color: var(--muted); border: 1px solid var(--border2); }
+  .badge.concept { background: var(--blue-dim); color: var(--blue); }
+
+  .q-text {
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: var(--text);
+    line-height: 1.5;
+  }
+
+  .q-chevron {
+    color: var(--muted);
+    font-size: 12px;
+    padding-top: 4px;
+    flex-shrink: 0;
+    transition: transform .25s;
+  }
+  .q-card.open .q-chevron { transform: rotate(180deg); }
+
+  /* ─── EXPANDED BODY ─── */
+  .q-body {
+    display: none;
+    border-top: 1px solid var(--border);
+    padding: 14px 16px 16px 56px;
+    animation: fadeIn .15s ease;
+  }
+  .q-card.open .q-body { display: block; }
+
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(-4px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  .btn-row { display: flex; gap: 8px; margin-bottom: 10px; }
+
+  .btn {
+    padding: 4px 13px;
+    border-radius: 6px;
+    font-size: 0.73rem;
+    font-weight: 600;
+    cursor: pointer;
+    border: 1px solid;
+    transition: all .15s;
+    font-family: 'JetBrains Mono', monospace;
+  }
+  .btn:hover { transform: translateY(-1px); }
+  .btn.hint-btn   { background: var(--amber-dim); color: var(--amber); border-color: rgba(245,158,11,0.4); }
+  .btn.answer-btn { background: var(--green-dim); color: var(--green); border-color: rgba(61,214,140,0.4); }
+  .btn.active { box-shadow: 0 0 0 1px currentColor; }
+
+  .hint-box {
+    display: none;
+    background: rgba(245,158,11,0.07);
+    border: 1px solid rgba(245,158,11,0.25);
+    border-radius: 7px;
+    padding: 9px 13px;
+    font-size: 0.8rem;
+    color: #fcd34d;
+    margin-bottom: 10px;
+    line-height: 1.6;
+  }
+  .hint-box.visible { display: block; }
+
+  .answer-block { display: none; }
+  .answer-block.visible { display: block; }
+
+  .answer-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 6px;
+  }
+  .answer-header span {
+    font-size: 0.7rem;
+    color: var(--muted);
+    font-family: 'JetBrains Mono', monospace;
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+  }
+
+  .copy-btn {
+    background: var(--surface2);
+    border: 1px solid var(--border2);
+    border-radius: 5px;
+    color: var(--muted);
+    font-size: 0.7rem;
+    padding: 3px 9px;
+    cursor: pointer;
+    transition: all .15s;
+    font-family: 'JetBrains Mono', monospace;
+  }
+  .copy-btn:hover { color: var(--text); border-color: var(--accent); }
+  .copy-btn.copied { color: var(--green); border-color: var(--green); }
+
+  pre.code-block {
+    background: var(--code-bg);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 14px 16px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.78rem;
+    line-height: 1.75;
+    color: #cdd6f4;
+    overflow-x: auto;
+    white-space: pre;
+  }
+
+  /* Syntax highlight colours */
+  .kw  { color: #cba6f7; }   /* keywords */
+  .fn  { color: #89b4fa; }   /* functions */
+  .str { color: #a6e3a1; }   /* strings */
+  .num { color: #fab387; }   /* numbers */
+  .cm  { color: #585b70; }   /* comments */
+  .tbl { color: #f38ba8; }   /* table names */
+
+  /* ─── SCROLLBAR ─── */
+  ::-webkit-scrollbar { width: 6px; height: 6px; }
+  ::-webkit-scrollbar-track { background: var(--bg); }
+  ::-webkit-scrollbar-thumb { background: #333; border-radius: 3px; }
+  ::-webkit-scrollbar-thumb:hover { background: #555; }
+
+  /* ─── RESPONSIVE ─── */
+  @media (max-width: 600px) {
+    header, main { padding-left: 1rem; padding-right: 1rem; }
+    .q-body { padding-left: 12px; }
+    .title-block h1 { font-size: 1.3rem; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+    <script src="Question.js"></script>
+  <div class="header-inner">
+    <div class="header-top">
+      <div class="title-block">
+        <h1>SQL Server Question Bank</h1>
+        <p>AdventureWorksDW2025 · 490 questions · Easy → Complex</p>
+      </div>
+      <div class="stats-row" id="statPills">
+        <div class="stat-pill all active" data-level="All">All</div>
+        <div class="stat-pill beg" data-level="Beginner">Beginner</div>
+        <div class="stat-pill int" data-level="Intermediate">Intermediate</div>
+        <div class="stat-pill adv" data-level="Advanced">Advanced</div>
+      </div>
+    </div>
+    <div class="filters">
+      <div class="search-wrap">
+        <span class="icon">⌕</span>
+        <input type="text" id="searchInput" placeholder="Search questions, topics, concepts…">
+      </div>
+      <select id="topicFilter">
+        <option value="All">All Topics</option>
+      </select>
+      <div class="count-badge" id="countBadge">60 shown</div>
+    </div>
+  </div>
+</header>
+
+<main id="questionList"></main>
+
+<script>
+
+// ─── BUILD TOPIC FILTER ───────────────────────────────────────────────────────
+const topics = [...new Set(questions.map(q => q.topic))].sort();
+const tf = document.getElementById('topicFilter');
+topics.forEach(t => {
+  const o = document.createElement('option');
+  o.value = o.textContent = t;
+  tf.appendChild(o);
+});
+
+// ─── LEVEL PILL FILTER ────────────────────────────────────────────────────────
+let activeLevel = 'All';
+document.querySelectorAll('.stat-pill').forEach(pill => {
+  pill.addEventListener('click', () => {
+    activeLevel = pill.dataset.level;
+    document.querySelectorAll('.stat-pill').forEach(p => {
+      p.classList.toggle('active', p.dataset.level === activeLevel);
+    });
+    render();
+  });
+});
+
+// ─── SEARCH + TOPIC FILTER ────────────────────────────────────────────────────
+const searchInput = document.getElementById('searchInput');
+const topicFilter = document.getElementById('topicFilter');
+searchInput.addEventListener('input', render);
+topicFilter.addEventListener('change', render);
+
+// ─── SIMPLE SQL HIGHLIGHT ─────────────────────────────────────────────────────
+const KEYWORDS = /\b(SELECT|FROM|WHERE|JOIN|LEFT|RIGHT|INNER|OUTER|CROSS|ON|GROUP BY|ORDER BY|HAVING|UNION|EXCEPT|INTERSECT|INSERT|UPDATE|DELETE|CREATE|ALTER|DROP|TABLE|VIEW|PROCEDURE|FUNCTION|TRIGGER|INDEX|AS|BY|AND|OR|NOT|IN|BETWEEN|LIKE|IS|NULL|TOP|DISTINCT|WITH|RECURSIVE|CASE|WHEN|THEN|ELSE|END|BEGIN|COMMIT|ROLLBACK|TRANSACTION|DECLARE|SET|EXEC|EXECUTE|RETURN|OUTPUT|RETURNS|GO|PARTITION|OVER|ROWS|UNBOUNDED|PRECEDING|FOLLOWING|CURRENT ROW|ALL|SOME|ANY|EXISTS|INTO|VALUES|DEFAULT|CONSTRAINT|PRIMARY KEY|FOREIGN KEY|REFERENCES|UNIQUE|CHECK|IDENTITY|NOCOUNT|RAISERROR|THROW|CATCH|TRY|PIVOT|FOR|INCLUDE|NONCLUSTERED|CLUSTERED)\b/g;
+const FUNCTIONS = /\b(COUNT|SUM|AVG|MIN|MAX|RANK|ROW_NUMBER|DENSE_RANK|NTILE|LAG|LEAD|FIRST_VALUE|LAST_VALUE|COALESCE|ISNULL|IIF|CONVERT|CAST|CONCAT|SUBSTRING|CHARINDEX|LEN|LEFT|RIGHT|UPPER|LOWER|TRIM|LTRIM|RTRIM|STRING_AGG|REPLICATE|GETDATE|DATEADD|DATEDIFF|YEAR|MONTH|DAY|OBJECT_ID|QUOTENAME|DATALENGTH|PRINT|ERROR_MESSAGE|NEWID)\b/g;
+const STRINGS = /'[^']*'/g;
+const NUMBERS = /\b\d+(\.\d+)?\b/g;
+const COMMENTS = /--.*/g;
+
+function highlight(code) {
+  return code
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+    .replace(COMMENTS, m => `<span class="cm">${m}</span>`)
+    .replace(STRINGS,  m => `<span class="str">${m}</span>`)
+    .replace(KEYWORDS, m => `<span class="kw">${m}</span>`)
+    .replace(FUNCTIONS,m => `<span class="fn">${m}</span>`)
+    .replace(NUMBERS,  m => `<span class="num">${m}</span>`);
+}
+
+// ─── RENDER ───────────────────────────────────────────────────────────────────
+function render() {
+  const search = searchInput.value.toLowerCase().trim();
+  const topicVal = topicFilter.value;
+
+  const filtered = questions.filter(q => {
+    if (activeLevel !== 'All' && q.level !== activeLevel) return false;
+    if (topicVal !== 'All' && q.topic !== topicVal) return false;
+    if (search) {
+      return q.question.toLowerCase().includes(search) ||
+             q.topic.toLowerCase().includes(search) ||
+             q.concept.toLowerCase().includes(search);
+    }
+    return true;
+  });
+
+  document.getElementById('countBadge').textContent = `${filtered.length} shown`;
+
+  const list = document.getElementById('questionList');
+  list.innerHTML = '';
+
+  if (!filtered.length) {
+    list.innerHTML = '<div class="empty-state"><span>🔍</span>No questions match your filters.</div>';
+    return;
+  }
+
+  const levelClass = { Beginner:'beg', Intermediate:'int', Advanced:'adv' };
+
+  filtered.forEach(q => {
+    const lc = levelClass[q.level];
+    const card = document.createElement('div');
+    card.className = 'q-card';
+    card.dataset.id = q.id;
+
+    card.innerHTML = `
+      <div class="q-header">
+        <span class="q-num">#${String(q.id).padStart(2,'0')}</span>
+        <div class="q-meta">
+          <div class="badge-row">
+            <span class="badge ${lc}">${q.level}</span>
+            <span class="badge topic">${q.topic}</span>
+            <span class="badge concept">${q.concept}</span>
+          </div>
+          <div class="q-text">${q.question}</div>
+        </div>
+        <span class="q-chevron">▼</span>
+      </div>
+      <div class="q-body">
+        <div class="btn-row">
+          <button class="btn hint-btn" data-id="${q.id}">💡 Show hint</button>
+          <button class="btn answer-btn" data-id="${q.id}">✅ Show answer</button>
+        </div>
+        <div class="hint-box" id="hint-${q.id}">${q.hint}</div>
+        <div class="answer-block" id="ans-${q.id}">
+          <div class="answer-header">
+            <span>T-SQL answer</span>
+            <button class="copy-btn" data-id="${q.id}">Copy</button>
+          </div>
+          <pre class="code-block">${highlight(q.answer)}</pre>
+        </div>
+      </div>`;
+
+    list.appendChild(card);
+  });
+
+  // ─── Event delegation ─────────────────────────────────────────────────────
+  list.addEventListener('click', e => {
+    // Toggle card open
+    const header = e.target.closest('.q-header');
+    if (header) {
+      const card = header.closest('.q-card');
+      card.classList.toggle('open');
+      return;
+    }
+
+    // Hint button
+    const hintBtn = e.target.closest('.hint-btn');
+    if (hintBtn) {
+      const id = hintBtn.dataset.id;
+      const box = document.getElementById(`hint-${id}`);
+      const vis = box.classList.toggle('visible');
+      hintBtn.textContent = vis ? '💡 Hide hint' : '💡 Show hint';
+      hintBtn.classList.toggle('active', vis);
+      return;
+    }
+
+    // Answer button
+    const ansBtn = e.target.closest('.answer-btn');
+    if (ansBtn) {
+      const id = ansBtn.dataset.id;
+      const block = document.getElementById(`ans-${id}`);
+      const vis = block.classList.toggle('visible');
+      ansBtn.textContent = vis ? '✅ Hide answer' : '✅ Show answer';
+      ansBtn.classList.toggle('active', vis);
+      return;
+    }
+
+    // Copy button
+    const copyBtn = e.target.closest('.copy-btn');
+    if (copyBtn) {
+      const id = copyBtn.dataset.id;
+      const q = questions.find(x => x.id == id);
+      if (q) {
+        navigator.clipboard.writeText(q.answer).then(() => {
+          copyBtn.textContent = 'Copied!';
+          copyBtn.classList.add('copied');
+          setTimeout(() => {
+            copyBtn.textContent = 'Copy';
+            copyBtn.classList.remove('copied');
+          }, 1500);
+        }).catch(() => {
+          copyBtn.textContent = 'Error';
+          setTimeout(() => copyBtn.textContent = 'Copy', 1500);
+        });
+      }
+    }
+  }, { passive: true });
+}
+
+render();
+</script>
+</body>
+</html>
